@@ -50,12 +50,25 @@ public class AccountsService {
     }
     Account accountFrom = accountsRepository.getAccount(accountFromId);
     Account accountTo = accountsRepository.getAccount(accountToId);
+
     if (accountFrom == null || accountTo == null) {
       throw new IllegalArgumentException("One of the accounts does not exist");
     }
 
-    synchronized (accountFrom) {
-      synchronized (accountTo) {
+    Account firstLock;
+    Account secondLock;
+    //done to ensure locking only happens in a consistent and predefined order i.e. by comaring
+    //eg in case Account id 1  makes transfer to Account id 2 by comparing synchronization always happens in consisten order
+    if (accountFromId.compareTo(accountToId) < 0) {
+      firstLock = accountFrom;
+      secondLock = accountTo;
+    } else {
+      firstLock = accountTo;
+      secondLock = accountFrom;
+    }
+
+    synchronized (firstLock) {
+      synchronized (secondLock) {
         if (accountFrom.getBalance().compareTo(amount) < 0) {
           throw new InsufficientFundsException("Insufficient balance in account " + accountFromId);
         }
@@ -72,6 +85,7 @@ public class AccountsService {
       }
     }
   }
+
 
 
 }
